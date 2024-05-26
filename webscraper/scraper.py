@@ -17,7 +17,7 @@ from requests import RequestException
 
 # MISC
 from io import BytesIO
-import time
+import sys
 from PIL import Image, UnidentifiedImageError
 from colorama import Fore, init
 
@@ -63,7 +63,7 @@ def download_image(url: str, path: str, file_name: str) -> None:
         with open(file_path, "wb") as file:
             image.save(file, "JPEG")
 
-        print(Fore.GREEN + f"Image downloaded at: [{file_path}]")
+        print(Fore.GREEN + "Image downloaded at: " + Fore.RESET + f"[{file_path}]")
     except (RequestException, UnidentifiedImageError, IOError, OSError) as e:
         print(Fore.RED + f"Failed downloading image at [{file_path}]: <{e.__class__.__name__}>")
 
@@ -127,16 +127,11 @@ def main() -> None:
     driver_options: Options = Options()
     driver_services: Service = Service(CHROME_DRIVER_PATH)
     webdriver: Chrome = Chrome(service=driver_services, options=driver_options)
+    search_term: str = sys.argv[1]
+    max_images: int = int(sys.argv[2])
 
     # Getting the image urls:
-    urls: Set[str] = get_image_urls(webdriver, 2, "cats", 10)
-
-    # Downloading the images:
-    if urls is not None:
-        for url in urls:
-            print(url)
-    else:
-        print(Fore.YELLOW + "No image urls were loaded. [ABORTING]")
+    urls: Set[str] = get_image_urls(webdriver, 2, search_term, max_images)
 
     # QUITTING THE WEBDRIVER:
     try:
@@ -145,6 +140,13 @@ def main() -> None:
     except WebDriverException as e:
         print(Fore.RED + "Error while quitting webdriver!" + Fore.WHITE + e.__class__.__name__)
         return
+
+    # Downloading the images:
+    if urls is not None:
+        for i, url in enumerate(urls):
+            download_image(url, "imgs\\", f"{search_term}{i}.jpg")
+    else:
+        print(Fore.YELLOW + "No image urls were loaded. [ABORTING]")
 
 if __name__ == "__main__":
     main()
