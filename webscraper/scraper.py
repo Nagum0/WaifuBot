@@ -11,11 +11,14 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import WebDriverException, TimeoutException, NoSuchElementException
 
-# MISC
-import io
-import time
+# REQUESTS
 import requests
-from PIL import Image
+from requests import RequestException
+
+# MISC
+from io import BytesIO
+import time
+from PIL import Image, UnidentifiedImageError
 from colorama import Fore, init
 
 def click_reject_cookies_btn(webdriver: Chrome, delay: int) -> None:
@@ -40,12 +43,29 @@ def click_reject_cookies_btn(webdriver: Chrome, delay: int) -> None:
     except (NoSuchElementException, TimeoutException, WebDriverException, IndexError) as e:
         print(Fore.RED + f"Both attempts failed at clicking reject all cookies button: <{e.__class__.__name__}>")
 
+def download_image(url: str, path: str, file_name: str) -> None:
+    file_path = path + file_name
+
+    try:
+        image_content: bytes = requests.get(url).content
+        image_file_int_memory: BytesIO = BytesIO(image_content)
+        image: Image = Image.open(image_file_int_memory)
+
+        with open(file_path, "wb") as file:
+            image.save(file, "JPEG")
+
+        print(Fore.GREEN + f"Image downloaded at: [{file_path}]")
+    except (RequestException, UnidentifiedImageError, IOError, OSError) as e:
+        print(Fore.RED + f"Failed downloading image at [{file_path}]: <{e.__class__.__name__}>")
+
 def get_image_urls(webdriver: Chrome, delay: int, search_term: str) -> None:
     URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
     webdriver.get(URL)
 
     # Clicking reject all cookies button:
     click_reject_cookies_btn(webdriver, delay)
+
+    
 
 def main() -> None:
     # TEXT COLOR RESET:
@@ -59,6 +79,7 @@ def main() -> None:
 
     get_image_urls(webdriver, 1, "astolfo")
 
+    # QUITTING THE WEBDRIVER:
     try:
         webdriver.quit()
         print(Fore.GREEN + "Quit the webdriver successfully!")
