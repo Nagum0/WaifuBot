@@ -21,27 +21,31 @@ import time
 from PIL import Image, UnidentifiedImageError
 from colorama import Fore, init
 
-def click_reject_cookies_btn(webdriver: Chrome, delay: int) -> None:
+def click_reject_cookies_btn(webdriver: Chrome, delay: int) -> bool:
+    # Attempting the first version:
     try:
-        # Attempting the first version:
-        try:
-            reject_all_cookies_button: WebElement = WebDriverWait(webdriver, delay).until(EC.element_to_be_clickable((By.ID, "W0wltc")))
-            reject_all_cookies_button.click()
-            print(Fore.GREEN + "Reject all cookies button (v1) was clicked successfully!")
-            return
-        except (NoSuchElementException, TimeoutException, WebDriverException) as e:
-            print(Fore.RED + f"First attempt failed at clicking reject all cookies button: <{e.__class__.__name__}>")
-
-        # Attempting the second version:
-        reject_all_cookies_button_v2: WebElement = WebDriverWait(webdriver, delay).until(
-            EC.element_to_be_clickable(webdriver.find_elements(By.CLASS_NAME, "VfPpkd-LgbsSe-OWXEXe-k8QpJ")[0])
+        reject_all_cookies_button: WebElement = WebDriverWait(webdriver, delay).until(EC.element_to_be_clickable((By.ID, "W0wltc")))
+        reject_all_cookies_button.click()
+        print(Fore.GREEN + "Reject all cookies button (v1) was clicked successfully!")
+        return True
+    except (NoSuchElementException, TimeoutException, WebDriverException) as e:
+        print(Fore.RED + f"First attempt failed at clicking reject all cookies button: <{e.__class__.__name__}>")
+    
+    # Attempting the second version (here we have to accept the cookies):
+    try:
+        accept_all_cookies_button_v2: WebElement = WebDriverWait(webdriver, delay).until(
+            EC.element_to_be_clickable(webdriver.find_elements(By.TAG_NAME, "button")[1])
         )
-        reject_all_cookies_button_v2.click()
+        accept_all_cookies_button_v2.click()
 
         print(Fore.GREEN + "Reject all cookies button (v2) was clicked successfully!")
-        return
+        return True
     except (NoSuchElementException, TimeoutException, WebDriverException, IndexError) as e:
         print(Fore.RED + f"Both attempts failed at clicking reject all cookies button: <{e.__class__.__name__}>")
+        return False
+
+def scroll_down_on_page(webdriver: Chrome) -> None:
+    webdriver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
 
 def download_image(url: str, path: str, file_name: str) -> None:
     file_path = path + file_name
@@ -58,14 +62,22 @@ def download_image(url: str, path: str, file_name: str) -> None:
     except (RequestException, UnidentifiedImageError, IOError, OSError) as e:
         print(Fore.RED + f"Failed downloading image at [{file_path}]: <{e.__class__.__name__}>")
 
-def get_image_urls(webdriver: Chrome, delay: int, search_term: str) -> None:
+def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: int) -> Set[str]:
     URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
     webdriver.get(URL)
 
     # Clicking reject all cookies button:
-    click_reject_cookies_btn(webdriver, delay)
+    if not click_reject_cookies_btn(webdriver, delay):
+        print(Fore.YELLOW + "\"Accept all\" or \"Reject all\" cookies buttons were not clicked.")
 
-    
+    # Loading the thumbnails YQ4gaf
+    thumbnails: List[WebElement] = webdriver.find_elements(By.CLASS_NAME, "YQ4gaf")
+
+    while len(thumbnails) < max_images:
+        scroll_down_on_page(webdriver)
+        thumbnails = webdriver.find_elements(By.CLASS_NAME, "YQ4gaf")
+
+    print(f"Loaded thumbnails: {len(thumbnails)}")
 
 def main() -> None:
     # TEXT COLOR RESET:
@@ -77,14 +89,21 @@ def main() -> None:
     driver_services: Service = Service(CHROME_DRIVER_PATH)
     webdriver: Chrome = Chrome(service=driver_services, options=driver_options)
 
-    get_image_urls(webdriver, 1, "astolfo")
+    # Getting the image urls:
+    urls: Set[str] = get_image_urls(webdriver, 1, "cats", 100)
+
+    # Downloading the images:
+
 
     # QUITTING THE WEBDRIVER:
-    try:
-        webdriver.quit()
-        print(Fore.GREEN + "Quit the webdriver successfully!")
-    except WebDriverException as e:
-        print(Fore.RED + "Error while quitting webdriver!" + Fore.WHITE + e)
+    if webdriver is not None:
+        try:
+            webdriver.quit()
+            print(Fore.GREEN + "Quit the webdriver successfully!")
+        except WebDriverException as e:
+            print(Fore.RED + "Error while quitting webdriver!" + Fore.WHITE + e.__class__.__name__)
+    else:
+        print(Fore.RED + "Error while quitting webdriver!" + Fore.WHITE + "Webdriver was NONE")
 
 if __name__ == "__main__":
     main()
