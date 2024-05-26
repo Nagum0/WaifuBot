@@ -94,14 +94,29 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
     for i, thumbnail in enumerate(thumbnails):
         if i >= max_images:
             break
-
+        
+        # Clicking the thumbnail:
         try:
             clickable_thumbnail: WebElement = WebDriverWait(webdriver, delay).until(EC.element_to_be_clickable(thumbnail))
             clickable_thumbnail.click()
-            print(Fore.GREEN + "Thumbnail clicked." + Fore.RESET + f"[{clickable_thumbnail.find_element(By.CLASS_NAME, 'YQ4gaf').id}]")
+            print(Fore.GREEN + "Thumbnail clicked: " + Fore.RESET + f"[{clickable_thumbnail.find_element(By.CLASS_NAME, 'YQ4gaf').id}]")
         except WebDriverException as e:
             print(Fore.YELLOW + "Unable to click thumbnail." + Fore.RESET + f"<{e.__class__.__name__}>")
             continue
+        
+        # Searching for inner image:
+        try:
+            image: WebElement = WebDriverWait(webdriver, delay).until(EC.visibility_of_element_located((By.CLASS_NAME, "iPVvYb")))
+            src: str = image.get_attribute("src")
+
+            if src and "http" in src:
+                urls.add(src)
+                print(Fore.GREEN + "Image added: " + Fore.RESET + image.id)
+        except WebDriverException as e:
+            print(Fore.RED + "Inner image not found!" + Fore.RESET + f"<{e.__class__.__name__}>")
+            continue
+
+    return urls
 
 def main() -> None:
     # TEXT COLOR RESET:
@@ -114,20 +129,22 @@ def main() -> None:
     webdriver: Chrome = Chrome(service=driver_services, options=driver_options)
 
     # Getting the image urls:
-    urls: Set[str] = get_image_urls(webdriver, 1, "cats", 10)
+    urls: Set[str] = get_image_urls(webdriver, 2, "cats", 10)
 
     # Downloading the images:
-
+    if urls is not None:
+        for url in urls:
+            print(url)
+    else:
+        print(Fore.YELLOW + "No image urls were loaded. [ABORTING]")
 
     # QUITTING THE WEBDRIVER:
-    if webdriver is not None:
-        try:
-            webdriver.quit()
-            print(Fore.GREEN + "Quit the webdriver successfully! [main]")
-        except WebDriverException as e:
-            print(Fore.RED + "Error while quitting webdriver!" + Fore.WHITE + e.__class__.__name__)
-    else:
-        print(Fore.RED + "Error while quitting webdriver!" + Fore.WHITE + "Webdriver was NONE")
+    try:
+        webdriver.quit()
+        print(Fore.GREEN + "Quit the webdriver successfully! [main]")
+    except WebDriverException as e:
+        print(Fore.RED + "Error while quitting webdriver!" + Fore.WHITE + e.__class__.__name__)
+        return
 
 if __name__ == "__main__":
     main()
