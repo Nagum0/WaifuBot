@@ -20,6 +20,7 @@ from io import BytesIO
 import sys
 from PIL import Image, UnidentifiedImageError
 from colorama import Fore, init
+import random
 
 """
 CURRENT ISSUES:
@@ -67,6 +68,15 @@ def download_image(url: str, path: str, file_name: str) -> None:
     except (RequestException, UnidentifiedImageError, IOError, OSError) as e:
         print(Fore.RED + f"Failed downloading image at [{file_path}]: <{e.__class__.__name__}>")
 
+def load_image_thumbnails(webdriver: Chrome, delay: int, max_images: int) -> List[WebElement]:
+    thumbnails: List[WebElement] = webdriver.find_elements(By.CLASS_NAME, "mNsIhb")
+
+    while len(thumbnails) < max_images and len(thumbnails) > 0:
+        scroll_down_on_page(webdriver)
+        thumbnails = webdriver.find_elements(By.CLASS_NAME, "mNsIhb")
+
+    return thumbnails
+
 def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: int) -> Set[str]:
     URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
     webdriver.get(URL)
@@ -76,11 +86,7 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
         print(Fore.YELLOW + "Cookie information form was not found")
 
     # Loading the thumbnails
-    thumbnails: List[WebElement] = webdriver.find_elements(By.CLASS_NAME, "mNsIhb")
-
-    while len(thumbnails) < max_images and len(thumbnails) > 0:
-        scroll_down_on_page(webdriver)
-        thumbnails = webdriver.find_elements(By.CLASS_NAME, "mNsIhb")
+    thumbnails: List[WebElement] = load_image_thumbnails(webdriver, delay, max_images)
 
     if len(thumbnails) == 0:
         print(Fore.YELLOW + "No thumbnails were found. [ABORTING]")
@@ -117,6 +123,19 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
             continue
 
     return urls
+
+def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> str:
+    URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
+    webdriver.get(URL)
+
+    # Clicking reject all cookies button:
+    if not click_reject_cookies_btn(webdriver, delay):
+        print(Fore.YELLOW + "Cookie information form was not found")
+
+    # Loading the thumbnails
+    thumbnails: List[WebElement] = load_image_thumbnails(webdriver, delay, 350)
+
+    raise NotImplementedError
 
 def main() -> None:
     # TEXT COLOR RESET:
