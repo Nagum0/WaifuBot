@@ -30,6 +30,7 @@ from cookies_from_type import CookiesFormType
 # MISC
 from io import BytesIO
 import sys
+import os
 from PIL import Image, UnidentifiedImageError
 from colorama import Fore, init
 import random
@@ -37,21 +38,16 @@ import time
 
 """
 CURRENT ISSUES:
-    - 1. After accepting the cookies with the second form type the thumbnails don't get loaded.
-      Things I noticed: After second form type g-img tags aren't loaded only img tags are and they have a different classname for thumbnails. 
-      The rest looks fine currently.
-
     - 2. NSFW images cannot be downloaded because of censoring reasons.
 """
 
-""" ISSUES: 1 """
-def click_reject_cookies_btn(webdriver: Chrome, delay: int) -> bool:
+def fill_out_cookies_form(webdriver: Chrome, delay: int) -> CookiesFormType:
     # Attempting the first version:
     try:
         reject_all_cookies_button: WebElement = WebDriverWait(webdriver, delay).until(EC.element_to_be_clickable((By.ID, "W0wltc")))
         reject_all_cookies_button.click()
         print(Fore.GREEN + "Reject all cookies button (v1) was clicked successfully!")
-        return True
+        return CookiesFormType.BASIC_COOKIES_POPUP
     except WebDriverException as e:
         print(Fore.RED + f"First attempt failed at clicking reject all cookies button: <{e.__class__.__name__}>")
     
@@ -61,12 +57,11 @@ def click_reject_cookies_btn(webdriver: Chrome, delay: int) -> bool:
             EC.element_to_be_clickable(webdriver.find_elements(By.TAG_NAME, "button")[1])
         )
         accept_all_cookies_button_v2.click()
-
         print(Fore.GREEN + "Accept all cookies button (v2) was clicked successfully!")
-        return True
+        return CookiesFormType.BEFORE_YOU_PROCEED_COOKIE_FROM
     except (WebDriverException, IndexError) as e:
         print(Fore.RED + f"Both attempts failed at clicking reject all cookies button: <{e.__class__.__name__}>")
-        return False
+        return CookiesFormType.NO_COOKIES
 
 def scroll_down_on_page(webdriver: Chrome) -> None:
     webdriver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
@@ -76,8 +71,8 @@ def download_image(url: str, path: str, file_name: str) -> None:
 
     try:
         image_content: bytes = requests.get(url).content
-        image_file_int_memory: BytesIO = BytesIO(image_content)
-        image: Image = Image.open(image_file_int_memory)
+        image_file_in_memory: BytesIO = BytesIO(image_content)
+        image: Image = Image.open(image_file_in_memory)
 
         with open(file_path, "wb") as file:
             image.save(file, "JPEG")
@@ -85,29 +80,35 @@ def download_image(url: str, path: str, file_name: str) -> None:
         print(Fore.GREEN + "Image downloaded at: " + Fore.RESET + f"[{file_path}]")
     except (RequestException, UnidentifiedImageError, IOError, OSError) as e:
         print(Fore.RED + f"Failed downloading image at [{file_path}]: <{e.__class__.__name__}>")
+        
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            print(f"Error while removing file: {e.__class__.__name__}")
 
-def load_image_thumbnails(webdriver: Chrome, delay: int, max_images: int) -> List[WebElement]:
-    # mNsIhb Form type 1
-    # BUooTd Form type 2
-    thumbnails: List[WebElement] = webdriver.find_elements(By.CLASS_NAME, "mNsIhb")
+def load_image_thumbnails(webdriver: Chrome, form_type: CookiesFormType, delay: int, max_images: int) -> List[WebElement]:
+    # Here I implicit wait because sometimes the thumbnails don't load quick enough:
+    webdriver.implicitly_wait(delay)
+    thumbnails: List[WebElement] = webdriver.find_elements(By.CLASS_NAME, form_type.value[0])
 
     while len(thumbnails) < max_images and len(thumbnails) > 0:
         scroll_down_on_page(webdriver)
-        thumbnails = webdriver.find_elements(By.CLASS_NAME, "mNsIhb")
+        thumbnails = webdriver.find_elements(By.CLASS_NAME, form_type.value[0])
 
     return thumbnails
 
-""" ISSUES: 1, 2 """
 def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: int) -> Set[str]:
     URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
     webdriver.get(URL)
 
-    # Clicking reject all cookies button:
-    if not click_reject_cookies_btn(webdriver, delay):
+    # Filling out cookies form:
+    form_type: CookiesFormType = fill_out_cookies_form(webdriver, delay)
+
+    if form_type == CookiesFormType.NO_COOKIES:
         print(Fore.YELLOW + "Cookie information form was not found")
 
     # Loading the thumbnails
-    thumbnails: List[WebElement] = load_image_thumbnails(webdriver, delay, max_images)
+    thumbnails: List[WebElement] = load_image_thumbnails(webdriver, form_type, delay, max_images)
 
     if len(thumbnails) == 0:
         print(Fore.YELLOW + "No thumbnails were found. [ABORTING]")
@@ -126,8 +127,7 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
         try:
             clickable_thumbnail: WebElement = WebDriverWait(webdriver, delay).until(EC.element_to_be_clickable(thumbnail))
             clickable_thumbnail.click()
-            #print(Fore.GREEN + "Thumbnail clicked: " + Fore.RESET + f"[{clickable_thumbnail.find_element(By.CLASS_NAME, 'YQ4gaf').id}]")
-            print(Fore.GREEN + "Thumbnail clicked! ")
+            print(Fore.GREEN + "Thumbnail clicked: " + Fore.RESET + thumbnail.id)
         except WebDriverException as e:
             print(Fore.YELLOW + "Unable to click thumbnail: " + Fore.RESET + f"<{e.__class__.__name__}>")
             continue
@@ -139,7 +139,7 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
 
             if src and "http" in src:
                 urls.add(src)
-                print(Fore.GREEN + "Image added: " + Fore.RESET + image.id)
+                print(Fore.GREEN + "Image URL added: " + Fore.RESET + str(image))
         except WebDriverException as e:
             print(Fore.RED + "Inner image not found!" + Fore.RESET + f"<{e.__class__.__name__}>")
             continue
@@ -155,6 +155,8 @@ def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> str
     raise NotImplementedError
 
 def main() -> None:
+    start:float = time.time()
+
     # TEXT COLOR RESET:
     init(autoreset=True)
 
@@ -167,7 +169,7 @@ def main() -> None:
     max_images: int = int(sys.argv[2])
 
     # Getting the image urls:
-    urls: Set[str] = get_image_urls(webdriver, 2, search_term, max_images)
+    urls: Set[str] = get_image_urls(webdriver, 3, search_term, max_images)
 
     # QUITTING THE WEBDRIVER:
     try:
@@ -180,9 +182,17 @@ def main() -> None:
     # Downloading the images:
     if urls is not None:
         for i, url in enumerate(urls):
-            download_image(url, "imgs\\", f"{search_term}{i}.jpg")
+            download_image(url, "imgs\\cats\\", f"{search_term}{i}.jpg")
     else:
         print(Fore.YELLOW + "No image urls were loaded. [ABORTING]")
 
+    end: float = time.time()
+    n: int = len(os.listdir('imgs\\cats'))
+
+    print(f"Time spent downloading: {end - start}; Number of images downloaded: {n}")
+
 if __name__ == "__main__":
+    # 167 secs 103|150
+    # FAILED secs 96|250
+    # secs |250
     main()
