@@ -1,3 +1,12 @@
+""" 
+    GOOGLE IMAGE DOWNLOADER
+    
+    - Basically opens the chrome webdriver searches for the given search term on google images
+    and tries downloading the specified amount of images or downloads a random image.
+
+    - Functions from here are also used in the discord WaifuBot.
+"""
+
 # TYPING
 from typing import Final, List, Set
 
@@ -21,12 +30,17 @@ import sys
 from PIL import Image, UnidentifiedImageError
 from colorama import Fore, init
 import random
+import time
 
 """
 CURRENT ISSUES:
-    - After accepting the cookies with the second form type the thumbnails don't get loaded.
+    - 1.
+      After accepting the cookies with the second form type the thumbnails don't get loaded.
+      Things I noticed: After second form type g-img tags aren't loaded only img tags and they have a different classname for thumbnails. 
+      The rest looks fine currently.
 """
 
+""" ISSUE 1 """
 def click_reject_cookies_btn(webdriver: Chrome, delay: int) -> bool:
     # Attempting the first version:
     try:
@@ -77,6 +91,7 @@ def load_image_thumbnails(webdriver: Chrome, delay: int, max_images: int) -> Lis
 
     return thumbnails
 
+""" ISSUE 1 """
 def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: int) -> Set[str]:
     URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
     webdriver.get(URL)
@@ -124,6 +139,7 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
 
     return urls
 
+""" NOT IMPLEMENTED """
 def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> str:
     URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
     webdriver.get(URL)
