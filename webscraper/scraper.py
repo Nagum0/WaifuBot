@@ -24,6 +24,9 @@ from selenium.common.exceptions import WebDriverException, TimeoutException, NoS
 import requests
 from requests import RequestException
 
+# COOKIES FORM TYPE
+from cookies_from_type import CookiesFormType
+
 # MISC
 from io import BytesIO
 import sys
@@ -34,13 +37,14 @@ import time
 
 """
 CURRENT ISSUES:
-    - 1.
-      After accepting the cookies with the second form type the thumbnails don't get loaded.
-      Things I noticed: After second form type g-img tags aren't loaded only img tags and they have a different classname for thumbnails. 
+    - 1. After accepting the cookies with the second form type the thumbnails don't get loaded.
+      Things I noticed: After second form type g-img tags aren't loaded only img tags are and they have a different classname for thumbnails. 
       The rest looks fine currently.
+
+    - 2. NSFW images cannot be downloaded because of censoring reasons.
 """
 
-""" ISSUE 1 """
+""" ISSUES: 1 """
 def click_reject_cookies_btn(webdriver: Chrome, delay: int) -> bool:
     # Attempting the first version:
     try:
@@ -83,6 +87,8 @@ def download_image(url: str, path: str, file_name: str) -> None:
         print(Fore.RED + f"Failed downloading image at [{file_path}]: <{e.__class__.__name__}>")
 
 def load_image_thumbnails(webdriver: Chrome, delay: int, max_images: int) -> List[WebElement]:
+    # mNsIhb Form type 1
+    # BUooTd Form type 2
     thumbnails: List[WebElement] = webdriver.find_elements(By.CLASS_NAME, "mNsIhb")
 
     while len(thumbnails) < max_images and len(thumbnails) > 0:
@@ -91,7 +97,7 @@ def load_image_thumbnails(webdriver: Chrome, delay: int, max_images: int) -> Lis
 
     return thumbnails
 
-""" ISSUE 1 """
+""" ISSUES: 1, 2 """
 def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: int) -> Set[str]:
     URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
     webdriver.get(URL)
@@ -120,9 +126,10 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
         try:
             clickable_thumbnail: WebElement = WebDriverWait(webdriver, delay).until(EC.element_to_be_clickable(thumbnail))
             clickable_thumbnail.click()
-            print(Fore.GREEN + "Thumbnail clicked: " + Fore.RESET + f"[{clickable_thumbnail.find_element(By.CLASS_NAME, 'YQ4gaf').id}]")
+            #print(Fore.GREEN + "Thumbnail clicked: " + Fore.RESET + f"[{clickable_thumbnail.find_element(By.CLASS_NAME, 'YQ4gaf').id}]")
+            print(Fore.GREEN + "Thumbnail clicked! ")
         except WebDriverException as e:
-            print(Fore.YELLOW + "Unable to click thumbnail." + Fore.RESET + f"<{e.__class__.__name__}>")
+            print(Fore.YELLOW + "Unable to click thumbnail: " + Fore.RESET + f"<{e.__class__.__name__}>")
             continue
         
         # Searching for inner image:
@@ -140,17 +147,11 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
     return urls
 
 """ NOT IMPLEMENTED """
+def get_image_urls_form_type_2(webdriver: Chrome, delay: int, search_term: str, max_images: int) -> Set[str]:
+    raise NotImplementedError
+
+""" NOT IMPLEMENTED """
 def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> str:
-    URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
-    webdriver.get(URL)
-
-    # Clicking reject all cookies button:
-    if not click_reject_cookies_btn(webdriver, delay):
-        print(Fore.YELLOW + "Cookie information form was not found")
-
-    # Loading the thumbnails
-    thumbnails: List[WebElement] = load_image_thumbnails(webdriver, delay, 350)
-
     raise NotImplementedError
 
 def main() -> None:
