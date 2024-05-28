@@ -23,6 +23,7 @@ from selenium.common.exceptions import WebDriverException, TimeoutException, NoS
 # REQUESTS
 import requests
 from requests import RequestException
+from requests.exceptions import Timeout
 
 # COOKIES FORM TYPE
 from cookies_from_type import CookiesFormType
@@ -38,8 +39,6 @@ import time
 
 """
 CURRENT ISSUES:
-    - Sometimes the download takes too long and never finishes stopping the entire program from continuing until
-      physical shutdown.
     - NSFW images cannot be downloaded because of censoring reasons.
 """
 
@@ -69,10 +68,14 @@ def scroll_down_on_page(webdriver: Chrome) -> None:
     webdriver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
 
 def download_image(url: str, path: str, file_name: str) -> None:
+    print(f"\nImage URL: {url}")
     file_path = path + file_name
 
     try:
-        image_content: bytes = requests.get(url).content
+        image_request = requests.get(url, timeout=5)
+        image_request.raise_for_status()
+
+        image_content: bytes = image_request.content
         image_file_in_memory: BytesIO = BytesIO(image_content)
         image: Image = Image.open(image_file_in_memory)
 
@@ -80,13 +83,17 @@ def download_image(url: str, path: str, file_name: str) -> None:
             image.save(file, "JPEG")
 
         print(Fore.GREEN + "Image downloaded at: " + Fore.RESET + f"[{file_path}]")
-    except (RequestException, UnidentifiedImageError, IOError, OSError) as e:
+    except (Timeout, RequestException) as e:
+        print(Fore.RED + f"Failed downloading image at [{file_path}]: <{e.__class__.__name__}>")
+    except (UnidentifiedImageError, IOError, OSError) as e:
         print(Fore.RED + f"Failed downloading image at [{file_path}]: <{e.__class__.__name__}>")
         
+        # Removing corrupted file:
         try:
             os.remove(file_path)
+            print(Fore.YELLOW + f"Removed corrupted file at: {file_path}")
         except Exception as e:
-            print(f"Error while removing file: {e.__class__.__name__}")
+            print(f"Error while removing corrupted file at {file_path} <{e.__class__.__name__}>")
 
 def load_image_thumbnails(webdriver: Chrome, form_type: CookiesFormType, delay: int, max_images: int) -> List[WebElement]:
     # Here I implicit wait because sometimes the thumbnails don't load quick enough:
@@ -149,10 +156,6 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
     return urls
 
 """ NOT IMPLEMENTED """
-def get_image_urls_form_type_2(webdriver: Chrome, delay: int, search_term: str, max_images: int) -> Set[str]:
-    raise NotImplementedError
-
-""" NOT IMPLEMENTED """
 def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> str:
     raise NotImplementedError
 
@@ -194,7 +197,4 @@ def main() -> None:
     print(f"Time spent downloading: {end - start}; Number of images downloaded: {n}")
 
 if __name__ == "__main__":
-    # 167 secs 103|150
-    # FAILED secs 96|250
-    # secs |250
     main()
