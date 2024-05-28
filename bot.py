@@ -1,9 +1,16 @@
+# MISC
 import os
 import random
+
+# DOTENV
 from dotenv import load_dotenv
-from discord import Intents, Message, File, Member
+
+# DISCORD
+from discord import Intents, Message, File, Member, DMChannel
 from discord.ext.commands import Bot, Context
 from discord.ext import commands as cmds
+
+# TYPES
 from typing import List
 
 # Loading token:
@@ -13,56 +20,22 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 # Setting up bot and intents:
 intents = Intents().default()
 intents.message_content = True
-bot: Bot = Bot(intents=intents, command_prefix="!") 
+bot: Bot = Bot(intents=intents, command_prefix="w!")
+
+""" ------------------------- BOT EVENTS ------------------------- """
+@bot.event
+async def on_ready() -> None:
+    print(f"{bot.user} is ready!")
 
 @bot.event
-async def on_ready():
-    print(f'{bot.user.name} has connected to Discord!')
-
-@bot.event
-async def on_message(msg: Message):
-    if msg.author == bot.user:
+async def on_message(message: Message) -> None:
+    if message.author == bot.user:
         return
     
-    msg_content: str = f"[{msg.channel}] {msg.author}: {msg.content}"
-    print(msg_content)
+    if "sus" in message.content:
+        await message.channel.send("BAKA!")
 
-    with open("messages.log", "a") as file:
-        file.write(msg_content + "\n")
-    	
-    await bot.process_commands(msg)
+""" ------------------------- BOT COMMANDS ------------------------- """
 
-@bot.event
-async def on_command_error(ctx: Context, error: cmds.CommandError):
-    if isinstance(error, cmds.CommandNotFound):
-        await ctx.channel.send("Command doesn't exist!")
-
-@bot.event
-async def on_member_join(member: Member):
-    await member.dm_channel
-
-@bot.command(name="rei", help="Sends an image of Rei...")
-async def rei(ctx: Context):
-    try:
-        await ctx.channel.send(file=File("imgs/rei/rei9.jpg"))
-    except Exception as e:
-        await ctx.channel.send("Something went wrong...")
-
-@bot.command(name="sex", help="SEGGSO")
-async def sex(ctx: Context, sex: str = "IDK"):
-    if sex == "male":
-        await ctx.channel.send("SAY GEX")
-    elif sex == "female":
-        await ctx.channel.send("SESBIAN LEX")
-    else:
-        await ctx.channel.send("HUH...")
-
-@bot.command(name="astolfo", help="Sends a random astolfo image!")
-async def astolfo(ctx: Context):
-    imgs: List[str] = os.listdir("imgs/astolfo")
-    try:
-        await ctx.channel.send(file=File("imgs/astolfo/" + random.choice(imgs)))
-    except FileNotFoundError as fe:
-        await ctx.channel.send("File not found...")
-
-bot.run(token=TOKEN)
+if __name__ == "__main__":
+    bot.run(token=TOKEN)
