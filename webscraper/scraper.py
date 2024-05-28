@@ -38,7 +38,9 @@ import time
 
 """
 CURRENT ISSUES:
-    - 2. NSFW images cannot be downloaded because of censoring reasons.
+    - Sometimes the download takes too long and never finishes stopping the entire program from continuing until
+      physical shutdown.
+    - NSFW images cannot be downloaded because of censoring reasons.
 """
 
 def fill_out_cookies_form(webdriver: Chrome, delay: int) -> CookiesFormType:
