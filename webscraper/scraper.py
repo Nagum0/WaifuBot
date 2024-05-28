@@ -159,6 +159,10 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
 def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> str:
     raise NotImplementedError
 
+""" NOT IMPLEMENTED """
+def get_random_image_for_discord() -> str:
+    raise NotImplementedError
+
 def main() -> None:
     start:float = time.time()
 
