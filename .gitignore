@@ -1,6 +1,6 @@
 *.env
 *.pyc
-*.jpg
-*.png
-*.jpeg
+webscraper\imgs\*.jpg
+webscraper\imgs\*.png
+webscraper\imgs\*.jpeg
 *.log
