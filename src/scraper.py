@@ -8,7 +8,7 @@
 """
 
 # TYPING
-from typing import Final, List, Set
+from typing import Final, List, Set, Optional
 
 # SELENIUM
 from selenium.webdriver import Chrome
@@ -19,6 +19,9 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import WebDriverException
+
+# DISCORD
+from discord import File
 
 # REQUESTS
 import requests
@@ -38,8 +41,8 @@ import random
 import time
 
 #   CURRENT ISSUES:
+#       - No error handling in get_random_image_url(...)
 #       - NSFW images cannot be downloaded because of censoring reasons.
-#       - get_random_image_for_discord(...) is synchronous.
 
 def fill_out_cookies_form(webdriver: Chrome, delay: int) -> CookiesFormType:
     # Attempting the first version:
@@ -67,7 +70,7 @@ def scroll_down_on_page(webdriver: Chrome) -> None:
     webdriver.execute_script("window.scrollTo(0, document.body.scrollHeight)")
 
 def download_image(url: str, path: str, file_name: str) -> None:
-    print(f"\nImage URL: {url}")
+    print(f"Image URL: {url}")
     file_path = path + file_name
 
     try:
@@ -154,28 +157,38 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
 
     return urls
 
-""" NOT IMPLEMENTED """
-def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> str:
-    raise NotImplementedError
+def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> Optional[str]:
+    URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
+    webdriver.get(URL)
 
-#    This is used to download a random image from google images by the search term.
-#    Currently it is synchronous so it cannot be awaited in the bot so it will slow down the bot's
-#    performance.
-def get_random_image_for_discord(search_term: str) -> str:
-    # TEXT COLOR RESET:
-    init(autoreset=True)
+    # Filling out the cookies form:
+    form_type: CookiesFormType = fill_out_cookies_form(webdriver, delay)
 
-    # CRHOME DRIVER SETUP:
-    CHROME_DRIVER_PATH: Final[str] = "C:\\Users\\xptee\\Documents\\Prog\\AstolfoBot\\chromedriver.exe"
-    driver_options: Options = Options()
-    driver_services: Service = Service(CHROME_DRIVER_PATH)
-    webdriver: Chrome = Chrome(service=driver_services, options=driver_options)
+    # Loading the thumbnails:
+    thumbnails: List[WebElement] = load_image_thumbnails(webdriver, form_type, delay, 200)
 
+    # Get a random thumbnail:
+    thumbnail: WebElement = random.choice(thumbnails)
+
+    # Clicking the thumbnail:
     try:
-        webdriver.quit()
-        print(Fore.GREEN + "Successfully quit the chrome webdriver!")
+        clickable_thumbnai: WebElement = WebDriverWait(webdriver, delay).until(EC.element_to_be_clickable(thumbnail))
+        clickable_thumbnai.click()
+        print(Fore.GREEN + "Thumbnail clicked: " + Fore.RESET + thumbnail.id)
     except WebDriverException as e:
-        print(Fore.RED + "Error while quitting chrome webdriver: " + Fore.RESET + f"<{e.__class__.__name__}>")
+        print(Fore.YELLOW + "Unable to click thumbnail: " + Fore.RESET + f"<{e.__class__.__name__}>")
+
+    # Exctracting the inner image's src:
+    try:
+        image: WebElement = WebDriverWait(webdriver, delay).until(EC.visibility_of_element_located((By.CLASS_NAME, "iPVvYb")))
+        src: str = image.get_attribute("src")
+
+        if src and "http" in src:
+            print(Fore.GREEN + "Image URL found: " + Fore.RESET + str(image))
+            return src
+    except WebDriverException as e:
+        print(Fore.RED + "Inner image not found!" + Fore.RESET + f"<{e.__class__.__name__}>")
+        return None
 
 #    ONLY FOR TESTING PURPOSES;
 #    DOESN'T WORK CURRENTLY;
@@ -216,5 +229,5 @@ def main() -> None:
 
     print(f"Time spent downloading: {end - start}; Number of images downloaded: {n}")
 
-""" if __name__ == "__main__":
-    main() """
+if __name__ == "__main__":
+    pass

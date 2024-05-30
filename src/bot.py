@@ -52,10 +52,9 @@ async def on_member_remove(member: Member) -> None:
 """ ------------------------- BOT COMMANDS ------------------------- """
 @bot.command(name="waifu", help="Sends a random image of whatever you tell it to.")
 async def waifu(context: Context, search_term: str) -> None:
-    image_path: str = get_random_image_for_discord(search_term)
-
-    sender: Member = context.author
-    await context.send(f"Unfortunately {sender.name}, this feature is still being developed...")
+    image: File = get_random_image_for_discord(search_term)
+    await context.send(file=image)
+    print(f"Image sent in: [{context.channel}]")
 
 if __name__ == "__main__":
     bot.run(token=TOKEN)
