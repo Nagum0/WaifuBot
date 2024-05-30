@@ -18,7 +18,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import WebDriverException, TimeoutException, NoSuchElementException
+from selenium.common.exceptions import WebDriverException
 
 # REQUESTS
 import requests
@@ -37,10 +37,9 @@ from colorama import Fore, init
 import random
 import time
 
-"""
-CURRENT ISSUES:
-    - NSFW images cannot be downloaded because of censoring reasons.
-"""
+#   CURRENT ISSUES:
+#       - NSFW images cannot be downloaded because of censoring reasons.
+#       - get_random_image_for_discord(...) is synchronous.
 
 def fill_out_cookies_form(webdriver: Chrome, delay: int) -> CookiesFormType:
     # Attempting the first version:
@@ -159,10 +158,27 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
 def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> str:
     raise NotImplementedError
 
-""" NOT IMPLEMENTED """
-def get_random_image_for_discord() -> str:
-    raise NotImplementedError
+#    This is used to download a random image from google images by the search term.
+#    Currently it is synchronous so it cannot be awaited in the bot so it will slow down the bot's
+#    performance.
+def get_random_image_for_discord(search_term: str) -> str:
+    # TEXT COLOR RESET:
+    init(autoreset=True)
 
+    # CRHOME DRIVER SETUP:
+    CHROME_DRIVER_PATH: Final[str] = "C:\\Users\\xptee\\Documents\\Prog\\AstolfoBot\\chromedriver.exe"
+    driver_options: Options = Options()
+    driver_services: Service = Service(CHROME_DRIVER_PATH)
+    webdriver: Chrome = Chrome(service=driver_services, options=driver_options)
+
+    try:
+        webdriver.quit()
+        print(Fore.GREEN + "Successfully quit the chrome webdriver!")
+    except WebDriverException as e:
+        print(Fore.RED + "Error while quitting chrome webdriver: " + Fore.RESET + f"<{e.__class__.__name__}>")
+
+#    ONLY FOR TESTING PURPOSES;
+#    DOESN'T WORK CURRENTLY;
 def main() -> None:
     start:float = time.time()
 
@@ -170,7 +186,7 @@ def main() -> None:
     init(autoreset=True)
 
     # CRHOME DRIVER SETUP:
-    CHROME_DRIVER_PATH: Final[str] = "C:\\Users\\xptee\\Documents\\Prog\\AstolfoBot\\webscraper\\chromedriver.exe"
+    CHROME_DRIVER_PATH: Final[str] = "C:\\Users\\xptee\\Documents\\Prog\\AstolfoBot\\src\\webscraper\\chromedriver.exe"
     driver_options: Options = Options()
     driver_services: Service = Service(CHROME_DRIVER_PATH)
     webdriver: Chrome = Chrome(service=driver_services, options=driver_options)
@@ -200,5 +216,5 @@ def main() -> None:
 
     print(f"Time spent downloading: {end - start}; Number of images downloaded: {n}")
 
-if __name__ == "__main__":
-    main()
+""" if __name__ == "__main__":
+    main() """

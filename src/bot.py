@@ -12,7 +12,7 @@ from discord.ext.commands import Bot, Context
 from typing import List
 
 # WEBSCRAPER
-from webscraper.scraper import get_random_image_for_discord
+from scraper import get_random_image_for_discord
 
 # Loading token:
 load_dotenv()
@@ -52,6 +52,8 @@ async def on_member_remove(member: Member) -> None:
 """ ------------------------- BOT COMMANDS ------------------------- """
 @bot.command(name="waifu", help="Sends a random image of whatever you tell it to.")
 async def waifu(context: Context, search_term: str) -> None:
+    image_path: str = get_random_image_for_discord(search_term)
+
     sender: Member = context.author
     await context.send(f"Unfortunately {sender.name}, this feature is still being developed...")
 

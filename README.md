@@ -2,7 +2,7 @@
 ![LOGO](waifu.jpg)
 
 # Commands
-- w!get <...>
+- w!waifu <...>
     - Sends in a random image from google images by the inputted search term;
 - w!bible
     - Sends in a random bible verse;
