@@ -1,3 +1,6 @@
+# DISCORD
+from discord import File
+
 # TYPING
 from typing import Final
 
@@ -25,7 +28,7 @@ def get_random_image(search_term: str) -> str:
     init(autoreset=True)
 
     # CRHOME DRIVER SETUP:
-    CHROME_DRIVER_PATH: Final[str] = "C:\\Users\\xptee\\Documents\\Prog\\AstolfoBot\\chromedriver.exe"
+    CHROME_DRIVER_PATH: Final[str] = "C:\\Users\\xptee\\Documents\\Projects\\WaifuBot\\chromedriver.exe"
     driver_options: Options = Options()
     driver_options.add_argument("--headless")
     driver_options.add_argument("--disable-gpu")
@@ -44,6 +47,6 @@ def get_random_image(search_term: str) -> str:
         print(Fore.RED + "Error while quitting chrome webdriver: " + Fore.RESET + f"<{e.__class__.__name__}>")
 
     # Downloading the image:
-    download_image(image_url, "imgs\\", "discord_img.jpg")
+    download_image(image_url, "src\\imgs\\", "discord_img.jpg")
 
-    return File("imgs\\discord_img.jpg", "discord_img.jpg")
+    return File("src\\imgs\\discord_img.jpg", "discord_img.jpg")

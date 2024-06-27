@@ -199,7 +199,7 @@ def main() -> None:
     init(autoreset=True)
 
     # CRHOME DRIVER SETUP:
-    CHROME_DRIVER_PATH: Final[str] = "C:\\Users\\xptee\\Documents\\Prog\\AstolfoBot\\src\\webscraper\\chromedriver.exe"
+    CHROME_DRIVER_PATH: Final[str] = "C:\\Users\\xptee\\Documents\\Projects\\WaifuBot\\chromedriver.exe"
     driver_options: Options = Options()
     driver_services: Service = Service(CHROME_DRIVER_PATH)
     webdriver: Chrome = Chrome(service=driver_services, options=driver_options)
@@ -220,14 +220,14 @@ def main() -> None:
     # Downloading the images:
     if urls is not None:
         for i, url in enumerate(urls):
-            download_image(url, "imgs\\cats\\", f"{search_term}{i}.jpg")
+            download_image(url, "src\\imgs\\", f"{search_term}{i}.jpg")
     else:
         print(Fore.YELLOW + "No image urls were loaded. [ABORTING]")
 
     end: float = time.time()
-    n: int = len(os.listdir('imgs\\cats'))
+    n: int = len(os.listdir('src\\imgs\\'))
 
     print(f"Time spent downloading: {end - start}; Number of images downloaded: {n}")
 
 if __name__ == "__main__":
-    pass
+    main()
