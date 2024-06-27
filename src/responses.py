@@ -16,13 +16,14 @@ from colorama import Fore, init
 # WEBSCRAPER
 from scraper import get_random_image_url, download_image
 
+# ASYNC
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
 #   CURRENT ISSUES:
 #       - No error handling for get_random_image(...)
 #       - get_random_image(...) is currently synchronous
 
-#    This is used to download a random image from google images by the search term.
-#    Currently it is synchronous so it cannot be awaited in the bot so it will slow down the bot's
-#    performance.
 def get_random_image(search_term: str) -> str:
     # TEXT COLOR RESET:
     init(autoreset=True)
@@ -50,3 +51,12 @@ def get_random_image(search_term: str) -> str:
     download_image(image_url, "src\\imgs\\", "discord_img.jpg")
 
     return File("src\\imgs\\discord_img.jpg", "discord_img.jpg")
+
+# Async wrapper for get_random_image(...):
+async def async_get_random_image(search_term: str) -> File:
+    loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
+
+    with ThreadPoolExecutor() as executor:
+        result = await loop.run_in_executor(executor, get_random_image, search_term)
+
+    return result

@@ -11,9 +11,8 @@ from discord.ext.commands import Bot, Context
 # TYPES
 from typing import List
 
-# WEBSCRAPER
-# from .scraper import get_random_image_url
-from responses import get_random_image
+# RESPONSES
+from responses import async_get_random_image
 
 # Loading token:
 load_dotenv()
@@ -53,7 +52,7 @@ async def on_member_remove(member: Member) -> None:
 """ ------------------------- BOT COMMANDS ------------------------- """
 @bot.command(name="waifu", help="Sends a random image of whatever you tell it to.")
 async def waifu(context: Context, search_term: str) -> None:
-    image: File = get_random_image(search_term)
+    image: File = await async_get_random_image(search_term)
     await context.send(file=image)
     print(f"Image sent in: [{context.channel}]")
 
