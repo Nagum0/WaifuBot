@@ -55,8 +55,8 @@ def fill_out_cookies_form(webdriver: Chrome, delay: int) -> CookiesFormType:
         reject_all_cookies_button.click()
         print(Fore.GREEN + "Reject all cookies button (v1) was clicked successfully!")
         return CookiesFormType.BASIC_COOKIES_POPUP
-    except WebDriverException as e:
-        print(Fore.RED + f"First attempt failed at clicking reject all cookies button: <{e.__class__.__name__}>")
+    except WebDriverException:
+        print(Fore.RED + "First attempt failed at clicking reject all cookies button.")
     
     # Attempting the second version (here we have to accept the cookies):
     try:
@@ -66,8 +66,8 @@ def fill_out_cookies_form(webdriver: Chrome, delay: int) -> CookiesFormType:
         accept_all_cookies_button_v2.click()
         print(Fore.GREEN + "Accept all cookies button (v2) was clicked successfully!")
         return CookiesFormType.BEFORE_YOU_PROCEED_COOKIE_FROM
-    except (WebDriverException, IndexError) as e:
-        print(Fore.RED + f"Both attempts failed at clicking reject all cookies button: <{e.__class__.__name__}>")
+    except (WebDriverException, IndexError):
+        print(Fore.RED + "Both attempts failed at clicking reject all cookies button.")
         return CookiesFormType.NO_COOKIES
 
 def scroll_down_on_page(webdriver: Chrome) -> None:
@@ -161,6 +161,13 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
 
     return urls
 
+def quit_webdriver(webdriver: Chrome) -> None:
+    try:
+        webdriver.quit()
+        print(Fore.GREEN + "Successfully quit the chrome webdriver!")
+    except WebDriverException as e:
+        print(Fore.RED + "Error while quitting chrome webdriver: " + Fore.RESET + f"<{e.__class__.__name__}>")
+
 #   Raises ExtractingImageSourceException:
 def extract_image_source(webdriver: Chrome, delay: int, thumbnail: WebElement) -> str:
     # Clicking the thumbnail:
@@ -207,7 +214,7 @@ def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> Opt
     try:
         return extract_image_source(webdriver, delay, thumbnail)
     except ExtractingImageSourceException as e:
-        print(Fore.RED + "Image source not extracted." + Fore.RESET + f"<{e.__class__.__name__}>")
+        print(Fore.RED + "Image source not extracted: " + Fore.RESET + f"<{e.__class__.__name__}>")
         return None
 
 #    ONLY FOR TESTING PURPOSES;

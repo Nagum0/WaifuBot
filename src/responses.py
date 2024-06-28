@@ -14,7 +14,7 @@ from selenium.common.exceptions import WebDriverException
 from colorama import Fore, init
 
 # WEBSCRAPER
-from scraper import get_random_image_url, download_image
+from scraper import get_random_image_url, download_image, quit_webdriver
 
 # ASYNC
 import asyncio
@@ -37,14 +37,13 @@ def get_random_image(search_term: str) -> File:
 
     # Getting the image url:
     image_url: str = get_random_image_url(webdriver, 3, search_term)
-    print(image_url)
+    if image_url is None:
+        print(Fore.RED + "No image url was extracted!")
+        quit_webdriver(webdriver)
+        return None # !!! raise NoImageException
 
     # QUITTING THE WEBDRIVER:
-    try:
-        webdriver.quit()
-        print(Fore.GREEN + "Successfully quit the chrome webdriver!")
-    except WebDriverException as e:
-        print(Fore.RED + "Error while quitting chrome webdriver: " + Fore.RESET + f"<{e.__class__.__name__}>")
+    quit_webdriver(webdriver)
 
     # Downloading the image:
     download_image(image_url, "src\\imgs\\", "discord_img.jpg")
@@ -62,3 +61,4 @@ async def async_get_random_image(search_term: str) -> File:
 
 if __name__ == "__main__":
     img: File = get_random_image("cat")
+    print(f"\n{img}")
