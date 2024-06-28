@@ -29,7 +29,10 @@ from requests import RequestException
 from requests.exceptions import Timeout
 
 # COOKIES FORM TYPE
-from cookies_from_type import CookiesFormType
+from scraper.cookies_from_type import CookiesFormType
+
+# SCRAPER EXCEPTIONS
+from scraper.exceptions import ExtractingImageSourceException
 
 # MISC
 from io import BytesIO
@@ -43,10 +46,6 @@ import time
 #   CURRENT ISSUES:
 #       - No error handling in get_random_image_url(...)
 #       - NSFW images cannot be downloaded because of censoring reasons.
-
-class ExtractingImageSourceException(Exception):
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
 
 def fill_out_cookies_form(webdriver: Chrome, delay: int) -> CookiesFormType:
     # Attempting the first version:

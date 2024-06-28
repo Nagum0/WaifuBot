@@ -14,6 +14,9 @@ from typing import List
 # RESPONSES
 from responses import async_get_random_image
 
+# EXCEPTIONS
+from excpetions import NoImageException
+
 # Loading token:
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -52,7 +55,13 @@ async def on_member_remove(member: Member) -> None:
 """ ------------------------- BOT COMMANDS ------------------------- """
 @bot.command(name="waifu", help="Sends a random image of whatever you tell it to.")
 async def waifu(context: Context, search_term: str) -> None:
-    image: File = await async_get_random_image(search_term)
+    image: File = None
+    
+    try:
+        image = await async_get_random_image(search_term)
+    except NoImageException:
+        image = File("src\\imgs\\404_no_image.png", "404_no_image.png")
+
     await context.send(file=image)
     print(f"Image sent in: [{context.channel}]")
 

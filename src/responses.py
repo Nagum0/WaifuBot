@@ -14,7 +14,10 @@ from selenium.common.exceptions import WebDriverException
 from colorama import Fore, init
 
 # WEBSCRAPER
-from scraper import get_random_image_url, download_image, quit_webdriver
+from scraper.scraper import get_random_image_url, download_image, quit_webdriver
+
+# EXCEPTIONS
+from excpetions import NoImageException
 
 # ASYNC
 import asyncio
@@ -40,13 +43,13 @@ def get_random_image(search_term: str) -> File:
     if image_url is None:
         print(Fore.RED + "No image url was extracted!")
         quit_webdriver(webdriver)
-        return None # !!! raise NoImageException
+        raise NoImageException
 
     # QUITTING THE WEBDRIVER:
     quit_webdriver(webdriver)
 
     # Downloading the image:
-    download_image(image_url, "src\\imgs\\", "discord_img.jpg")
+    download_image(image_url, "C:\\Users\\xptee\\Documents\\Projects\\WaifuBot\\src\\imgs\\", "discord_img.jpg")
 
     return File("src\\imgs\\discord_img.jpg", "discord_img.jpg")
 
@@ -60,5 +63,8 @@ async def async_get_random_image(search_term: str) -> File:
     return result
 
 if __name__ == "__main__":
-    img: File = get_random_image("cat")
-    print(f"\n{img}")
+    try:
+        img: File = asyncio.run(async_get_random_image("cat"))
+        print(img)
+    except NoImageException:
+        print("Error")
