@@ -44,6 +44,10 @@ import time
 #       - No error handling in get_random_image_url(...)
 #       - NSFW images cannot be downloaded because of censoring reasons.
 
+class ExtractingImageSourceException(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
 def fill_out_cookies_form(webdriver: Chrome, delay: int) -> CookiesFormType:
     # Attempting the first version:
     try:
@@ -157,26 +161,16 @@ def get_image_urls(webdriver: Chrome, delay: int, search_term: str, max_images: 
 
     return urls
 
-def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> Optional[str]:
-    URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
-    webdriver.get(URL)
-
-    # Filling out the cookies form:
-    form_type: CookiesFormType = fill_out_cookies_form(webdriver, delay)
-
-    # Loading the thumbnails:
-    thumbnails: List[WebElement] = load_image_thumbnails(webdriver, form_type, delay, 200)
-
-    # Get a random thumbnail:
-    thumbnail: WebElement = random.choice(thumbnails)
-
+#   Raises ExtractingImageSourceException:
+def extract_image_source(webdriver: Chrome, delay: int, thumbnail: WebElement) -> str:
     # Clicking the thumbnail:
     try:
-        clickable_thumbnai: WebElement = WebDriverWait(webdriver, delay).until(EC.element_to_be_clickable(thumbnail))
-        clickable_thumbnai.click()
+        clickable_thumbnail: WebElement = WebDriverWait(webdriver, delay).until(EC.element_to_be_clickable(thumbnail))
+        clickable_thumbnail.click()
         print(Fore.GREEN + "Thumbnail clicked: " + Fore.RESET + thumbnail.id)
     except WebDriverException as e:
         print(Fore.YELLOW + "Unable to click thumbnail: " + Fore.RESET + f"<{e.__class__.__name__}>")
+        raise ExtractingImageSourceException
 
     # Exctracting the inner image's src:
     try:
@@ -188,10 +182,35 @@ def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> Opt
             return src
     except WebDriverException as e:
         print(Fore.RED + "Inner image not found!" + Fore.RESET + f"<{e.__class__.__name__}>")
+        raise ExtractingImageSourceException
+
+def get_random_image_url(webdriver: Chrome, delay: int, search_term: str) -> Optional[str]:
+    URL: str = f"https://www.google.com/search?q={search_term}&sca_esv=d7d681b5ae96d960&sca_upv=1&hl=en&sxsrf=ADLYWII_hAmKnNUMYi8CAGUjUJ7uQDazww:1716662791317&source=hp&biw=1920&bih=945&ei=BzJSZsuHELyh5NoPoY-k-AY&iflsig=AL9hbdgAAAAAZlJAF0QPatPymQiT7gtJxVJUgv6iNBOH&ved=0ahUKEwiLp_2eu6mGAxW8EFkFHaEHCW8Q4dUDCA8&uact=5&oq=cats&gs_lp=EgNpbWciBGNhdHMyBBAjGCcyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgAQyBRAAGIAEMgUQABiABDIFEAAYgARIqAhQ-QNY_wZwAXgAkAEAmAHlAaABggWqAQUwLjMuMbgBA8gBAPgBAYoCC2d3cy13aXotaW1nmAIFoAKPBagCCsICBxAjGCcY6gKYAwWSBwUxLjMuMaAH_hk&sclient=img&udm=2"
+    webdriver.get(URL)
+
+    # Filling out the cookies form:
+    form_type: CookiesFormType = fill_out_cookies_form(webdriver, delay)
+    if form_type == CookiesFormType.NO_COOKIES:
+        print(Fore.YELLOW + "Cookie information form was not found")
+
+    # Loading the thumbnails:
+    thumbnails: List[WebElement] = load_image_thumbnails(webdriver, form_type, delay, 200)
+    if len(thumbnails) == 0:
+        print(Fore.RED + "No thumbnails were loaded!" + Fore.RESET)
+        return None
+    else:
+        print(f"Thumbnails loaded: {len(thumbnails)}")
+
+    # Get a random thumbnail:
+    thumbnail: WebElement = random.choice(thumbnails)
+
+    try:
+        return extract_image_source(webdriver, delay, thumbnail)
+    except ExtractingImageSourceException as e:
+        print(Fore.RED + "Image source not extracted." + Fore.RESET + f"<{e.__class__.__name__}>")
         return None
 
 #    ONLY FOR TESTING PURPOSES;
-#    DOESN'T WORK CURRENTLY;
 def main() -> None:
     start:float = time.time()
 

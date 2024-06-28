@@ -22,9 +22,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 #   CURRENT ISSUES:
 #       - No error handling for get_random_image(...)
-#       - get_random_image(...) is currently synchronous
 
-def get_random_image(search_term: str) -> str:
+def get_random_image(search_term: str) -> File:
     # TEXT COLOR RESET:
     init(autoreset=True)
 
@@ -60,3 +59,6 @@ async def async_get_random_image(search_term: str) -> File:
         result = await loop.run_in_executor(executor, get_random_image, search_term)
 
     return result
+
+if __name__ == "__main__":
+    img: File = get_random_image("cat")
